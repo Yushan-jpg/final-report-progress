@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>期末報告進度追蹤 App｜互動式Line群組工具</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;display=swap');
+body {
+font-family: 'Noto Sans TC', system-ui, sans-serif;
+}
+.group-card {
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.group-card:hover {
+transform: translateY(-4px);
+box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+.progress-bar {
+transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.status-dot {
+animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+</style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+<div class="max-w-7xl mx-auto">
+<!-- Navbar -->
+<nav class="bg-white border-b shadow-sm sticky top-0 z-50">
+<div class="px-6 py-4 flex items-center justify-between">
+<div class="flex items-center gap-x-3">
+<div class="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-inner">
+📊
+</div>
+<div>
+<h1 class="text-2xl font-bold text-gray-900">期末報告進度追蹤</h1>
+<p class="text-xs text-gray-500 -mt-1">互動App｜Line群組專用</p>
+</div>
+</div>
+
+<div class="flex items-center gap-x-6">
+<!-- Current date -->
+<div id="current-date" class="text-sm font-medium text-gray-600 flex items-center gap-x-2">
+<i class="fa-solid fa-calendar"></i>
+<span></span>
+</div>
+
+<div class="flex items-center bg-green-100 text-green-700 text-xs font-medium px-4 py-2 rounded-3xl">
+<div class="w-2 h-2 bg-green-500 rounded-full status-dot mr-2"></div>
+即時同步
+</div>
+
+<button onclick="resetAllData()"
+class="flex items-center gap-x-2 text-sm text-gray-500 hover:text-red-600 transition-colors">
+<i class="fa-solid fa-rotate"></i>
+<span>重置測試資料</span>
+</button>
+
+<a href="#" onclick="showTeacherView()"
+class="flex items-center px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-3xl transition-all">
+<i class="fa-solid fa-user-tie mr-2"></i>
+老師模式
+</a>
+</div>
+</div>
+</nav>
+
+<div class="p-6">
+<!-- Hero Banner -->
+<div class="bg-white rounded-3xl shadow-xl p-8 mb-8 flex flex-col md:flex-row items-center gap-8">
+<div class="flex-1">
+<div class="inline-flex items-center bg-amber-100 text-amber-700 text-sm font-medium px-4 h-8 rounded-3xl mb-4">
+<i class="fa-solid fa-clock mr-2"></i>
+2026年6月報告季
+</div>
+<h2 class="text-4xl font-bold text-gray-900 leading-none mb-4">學生自主填寫進度<br>自動產生回饋與警告</h2>
+<p class="text-lg text-gray-600 max-w-md">點擊組別 → 填寫本週進度% → 即時顯示「準時 / 延遲 / 嚴重延遲」並自動通知老師</p>
+
+<div class="flex gap-4 mt-8">
+<div onclick="showHowTo()" class="cursor-pointer flex-1 md:flex-none bg-white border border-gray-200 hover:border-indigo-300 rounded-3xl p-6 text-center">
+<i class="fa-solid fa-question-circle text-4xl text-indigo-500 mb-3"></i>
+<div class="font-semibold">如何使用</div>
+<div class="text-xs text-gray-500">3步驟教學</div>
+</div>
+<div class="flex-1 md:flex-none bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-3xl p-6">
+<div class="text-sm opacity-75">目前狀態</div>
+<div id="overall-status" class="text-5xl font-bold">7 組追蹤中</div>
+<div class="flex items-center gap-x-2 text-sm mt-2">
+<span class="px-3 py-1 bg-white/20 rounded-3xl text-xs">第01~07組</span>
+<span id="last-updated" class="opacity-75 text-xs"></span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Milestones legend -->
+<div class="flex-1 bg-gray-50 rounded-3xl p-6 text-sm">
+<div class="font-medium mb-4 flex items-center gap-x-2"><i class="fa-solid fa-calendar-check"></i> 重要里程碑</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-x-3">
+<span class="text-emerald-500">●</span>
+<span>報告前1個月</span>
+</div>
+<div class="font-semibold text-emerald-600">≥ 20%</div>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-x-3">
+<span class="text-amber-500">●</span>
+<span>報告前2週</span>
+</div>
+<div class="font-semibold text-amber-600">&gt; 40%</div>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-x-3">
+<span class="text-violet-500">●</span>
+<span>報告前1週</span>
+</div>
+<div class="font-semibold text-violet-600">&gt; 80%</div>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-x-3">
+<span class="text-rose-500">●</span>
+<span>報告前2天</span>
+</div>
+<div class="font-semibold text-rose-600">&gt; 95%</div>
+</div>
+</div>
+<div class="text-xs text-gray-500 mt-6 border-t pt-4">
+系統會自動比對「目前日期」與各組報告日，計算應達進度並給予即時回饋
+</div>
+</div>
+</div>
+
+<!-- Groups Grid -->
+<h2 class="text-2xl font-bold mb-6 flex items-center gap-x-3">
+<span>全班7組</span>
+<span class="text-base font-normal text-gray-500">(點擊卡片進入組內編輯)</span>
+</h2>
+
+<div id="groups-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Populated by JS -->
+</div>
+</div>
+</div>
+
+<!-- Group Detail Modal -->
+<div id="modal" onclick="if(event.target.id === 'modal') hideModal()"
+class="hidden fixed inset-0 bg-black/60 backdrop-blur-lg z-[100] flex items-center justify-center">
+<div onclick="event.stopImmediatePropagation()"
+class="bg-white w-full max-w-2xl mx-4 rounded-3xl shadow-2xl overflow-hidden">
+
+<div id="modal-header" class="px-8 py-6 border-b flex items-center justify-between">
+<!-- Filled by JS -->
+</div>
+
+<div class="p-8">
+<!-- Members -->
+<div class="mb-8">
+<div class="text-sm font-medium text-gray-500 mb-3 flex items-center">
+<i class="fa-solid fa-users mr-2"></i>
+組員名單
+</div>
+<div id="modal-members" class="grid grid-cols-2 gap-3 text-sm">
+<!-- Filled by JS -->
+</div>
+</div>
+
+<!-- Progress Input -->
+<div class="mb-8">
+<div class="flex justify-between items-baseline mb-4">
+<label class="font-medium">本週報告準備進度 (%)</label>
+<div class="text-4xl font-bold text-indigo-600" id="modal-progress-display">0</div>
+</div>
+
+<input type="range" id="progress-slider"
+class="w-full accent-indigo-600" min="0" max="100" value="0"
+oninput="updateProgressDisplay(this.value)">
+
+<div class="flex justify-between text-xs text-gray-400 mt-1">
+<span>0%</span><span>100%</span>
+</div>
+
+<button onclick="saveProgress()"
+class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-3xl font-semibold text-lg flex items-center justify-center gap-x-2 transition-all">
+<i class="fa-solid fa-paper-plane"></i>
+更新並儲存進度
+</button>
+</div>
+
+<!-- Status -->
+<div id="modal-status" class="rounded-3xl p-6 mb-6">
+<!-- Filled by JS -->
+</div>
+
+<!-- Milestones timeline -->
+<div class="text-sm">
+<div class="font-medium mb-3">本組報告里程碑</div>
+<div id="milestone-timeline" class="space-y-2 text-xs">
+<!-- Filled by JS -->
+</div>
+</div>
+</div>
+
+<div class="px-8 py-6 border-t flex items-center justify-between text-sm">
+<button onclick="hideModal()"
+class="font-medium text-gray-500 hover:text-gray-700 flex items-center gap-x-2">
+<i class="fa-solid fa-arrow-left"></i>
+返回列表
+</button>
+
+<button onclick="simulateTeacherNotification()"
+class="text-rose-600 hover:text-rose-700 font-medium flex items-center gap-x-2">
+<i class="fa-solid fa-bell"></i>
+<span>嚴重延遲 → 通知老師Line + Email</span>
+</button>
+</div>
+</div>
+</div>
+
+<!-- Teacher View Modal -->
+<div id="teacher-modal" onclick="if(event.target.id === 'teacher-modal') hideTeacherModal()"
+class="hidden fixed inset-0 bg-black/60 backdrop-blur-lg z-[110] flex items-center justify-center">
+<div onclick="event.stopImmediatePropagation()"
+class="bg-white w-full max-w-4xl mx-4 rounded-3xl shadow-2xl max-h-[90vh] overflow-auto">
+<div class="px-8 py-6 border-b sticky top-0 bg-white z-10 flex items-center justify-between">
+<h3 class="font-bold text-2xl">老師總覽儀表板</h3>
+<button onclick="hideTeacherModal()" class="text-2xl text-gray-400 hover:text-gray-600">✕</button>
+</div>
+
+<div class="p-8" id="teacher-content">
+<!-- Populated by JS -->
+</div>
+
+<div class="px-8 py-6 border-t text-xs text-gray-400 flex justify-between">
+<div>教師信箱：mytusttust@gmail.com</div>
+<div>本App可直接從Line群組開啟 • 資料儲存在瀏覽器本地（可分享連結）</div>
+</div>
+</div>
+</div>
+
+<!-- How To Modal -->
+<div id="howto-modal" onclick="if(event.target.id === 'howto-modal') hideHowTo()"
+class="hidden fixed inset-0 bg-black/60 backdrop-blur-lg z-[120] flex items-center justify-center">
+<div onclick="event.stopImmediatePropagation()" class="bg-white rounded-3xl max-w-lg w-full mx-4 p-8">
+<h3 class="text-2xl font-bold mb-6">3步驟使用說明</h3>
+<ol class="space-y-8">
+<li class="flex gap-x-6">
+<div class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center font-bold">1</div>
+<div>
+<div class="font-semibold">選擇你的組別</div>
+<p class="text-gray-600 text-sm">點擊卡片進入組內頁面，查看組員名單與報告主題</p>
+</div>
+</li>
+<li class="flex gap-x-6">
+<div class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center font-bold">2</div>
+<div>
+<div class="font-semibold">填寫本週進度</div>
+<p class="text-gray-600 text-sm">使用滑桿填入目前完成的百分比（0~100%）</p>
+</div>
+</li>
+<li class="flex gap-x-6">
+<div class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center font-bold">3</div>
+<div>
+<div class="font-semibold">自動獲得回饋</div>
+<p class="text-gray-600 text-sm">系統根據報告日期即時計算「是否落後」並顯示綠/黃/紅燈</p>
+<p class="text-xs text-rose-600 mt-1">嚴重落後時可一鍵通知老師</p>
+</div>
+</li>
+</ol>
+<button onclick="hideHowTo()"
+class="mt-8 w-full py-4 bg-gray-900 text-white rounded-3xl font-medium">我知道了，開始使用！</button>
+</div>
+</div>
+
+<script>
+// =============== DATA FROM EXCEL ===============
+const groupsData = [
+{
+id: 1,
+name: "第01組",
+theme: "飲食",
+presentationDate: "2026-06-11",
+leader: "阮氏何江",
+members: [
+{ no: "1", name: "阮氏何江", email: "41123A001@mitust.edu.tw", leader: true },
+{ no: "3", name: "曾氏城", email: "nguyenly23062005@icloud.com" },
+{ no: "5", name: "何懷藍", email: "lamh9093@gmail.com" },
+{ no: "6", name: "莫氏雪梅", email: "macthituyetmai2004@gmail.com" },
+{ no: "12", name: "鄧梅監", email: "dangcoi517@gmail.com" }
+]
+},
+{
+id: 2,
+name: "第02組",
+theme: "旅遊",
+presentationDate: "2026-06-11",
+leader: "盤燕薇",
+members: [
+{ no: "23", name: "岑紅兒", email: "samhongnhi18082005@gmail.com" },
+{ no: "25", name: "范氏恆", email: "41103A016@mitust.edu.tw" },
+{ no: "30", name: "盤燕薇", email: "yenvy26092005@gmail.com", leader: true },
+{ no: "31", name: "農嬿兒", email: "nhinongyen9@gmail.com" },
+{ no: "34", name: "農氏映月", email: "41123A038@mitust.edu.tw" },
+{ no: "36", name: "趙氏芳蘭", email: "41123A026@mitust.edu.tw" }
+]
+},
+{
+id: 3,
+name: "第03組",
+theme: "飲食",
+presentationDate: "2026-06-18",
+leader: "楊芳草",
+members: [
+{ no: "20", name: "阮氏如瓊", email: "nhuquynh5851@gmail.com" },
+{ no: "22", name: "費氏賢", email: "phithihien2711@gmail.com" },
+{ no: "26", name: "楊芳草", email: "ngophuongthaokn@gmail.com", leader: true },
+{ no: "28", name: "郎氏白嬿", email: "langthibachyen01@gmail.com" },
+{ no: "32", name: "阮視茶美", email: "tramyhs0805@gmail.com" },
+{ no: "35", name: "蘆氏妥", email: "tthoa862@gmail.com" }
+]
+},
+{
+id: 4,
+name: "第04組",
+theme: "文化習俗",
+presentationDate: "2026-06-18",
+leader: "黃梅芝",
+members: [
+{ no: "8", name: "黃梅芝", email: "diepchi526@gmail.com", leader: true },
+{ no: "9", name: "黃清妝", email: "hoangthanhtrang2401@gmail.com" },
+{ no: "10", name: "黃氏慶玲", email: "hoangthikhanhlinhdttl@gmail.com" },
+{ no: "11", name: "陳雒洪", email: "41123a002@gmail.com" },
+{ no: "18", name: "陸氏合", email: "luchop0308@gmail.com" },
+{ no: "33", name: "韋氏紅絨", email: "41123A017@mitust.edu.tw" }
+]
+},
+{
+id: 5,
+name: "第05組",
+theme: "小琉球 富國島",
+presentationDate: "2026-06-11",
+leader: "郎氏青草",
+members: [
+{ no: "13", name: "黎氏金銀", email: "lethikimngan265@gmail.com" },
+{ no: "14", name: "裴氏英詩", email: "buithianhthohs@gmail.com" },
+{ no: "15", name: "陳氏蘭英", email: "tranthilana60@gmail.com" },
+{ no: "16", name: "郎氏青草", email: "mjnhhoang@gmail.com", leader: true },
+{ no: "17", name: "鄧氏深", email: "dangthitham2004bb@gmail.com" },
+{ no: "27", name: "裴氏荷芳", email: "phuongtut2611@gmail.com" }
+]
+},
+{
+id: 6,
+name: "第06組",
+theme: "岘港 墾丁",
+presentationDate: "2026-06-25",
+leader: "農氏玄妝",
+members: [
+{ no: "2", name: "農日玲", email: "nhatlinh2244@gmail.com" },
+{ no: "4", name: "河氏盈", email: "hathidoanh9140@gmail.com" },
+{ no: "7", name: "裴氏李", email: "lybui6735@gmail.com" },
+{ no: "19", name: "李氏芳草", email: "lythiphuongthao0808@gmail.com" },
+{ no: "21", name: "梁玉映", email: "luongngoca14@gmail.com" },
+{ no: "24", name: "農氏玄妝", email: "nongthihuyentrang12@gmail.com", leader: true }
+]
+},
+{
+id: 7,
+name: "第07組",
+theme: "飲食",
+presentationDate: "2026-06-25",
+leader: "鄧氏清僑",
+members: [
+{ no: "29", name: "鄧氏清僑", email: "41123A004@mitust.edu.tw", leader: true }
+]
+}
+]
+
+// =============== UTILITY FUNCTIONS ===============
+function daysUntil(dateStr) {
+const today = new Date()
+today.setHours(0, 0, 0, 0)
+const target = new Date(dateStr)
+const diffTime = target - today
+return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+}
+
+function getExpectedProgress(daysLeft) {
+if (daysLeft > 30) return 0
+if (daysLeft > 14) return 20
+if (daysLeft > 7) return 40
+if (daysLeft > 2) return 80
+return 95
+}
+
+function getStatus(actual, expected) {
+const behind = Math.max(0, expected - actual)
+if (behind < 20) {
+return {
+label: "準時",
+color: "emerald",
+icon: "✅",
+description: "落後 < 20%，一切正常！"
+}
+} else if (behind < 40) {
+return {
+label: "延遲",
+color: "amber",
+icon: "⚠️",
+description: "落後超過20%，建議加速！"
+}
+} else {
+return {
+label: "嚴重延遲",
+color: "rose",
+icon: "🚨",
+description: "落後超過40%，需立即補救並通知老師"
+}
+}
+}
+
+// =============== RENDER GROUPS GRID ===============
+function renderGroups() {
+const container = document.getElementById('groups-grid')
+container.innerHTML = ''
+
+groupsData.forEach(group => {
+const daysLeft = daysUntil(group.presentationDate)
+const progressKey = `progress-group-${group.id}`
+let progress = parseFloat(localStorage.getItem(progressKey)) || 0
+
+const expected = getExpectedProgress(daysLeft)
+const status = getStatus(progress, expected)
+
+const cardHTML = `
+<div onclick="openGroupModal(${group.id})" class="group-card cursor-pointer bg-white rounded-3xl shadow border border-transparent overflow-hidden">
+<div class="px-6 pt-6 pb-4">
+<div class="flex justify-between items-start">
+<div>
+<div class="flex items-center gap-x-2">
+<span class="text-2xl">${group.name}</span>
+<span class="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-3xl">${group.theme}</span>
+</div>
+<div class="text-xs text-gray-500 mt-1">報告日：${group.presentationDate}</div>
+</div>
+<div class="text-right">
+<div class="text-5xl font-bold text-${status.color}-600">${progress}<span class="text-base align-bottom">%</span></div>
+<div class="flex items-center justify-end text-xs gap-x-1 mt-1">
+<span class="px-2.5 py-px bg-${status.color}-100 text-${status.color}-700 rounded-3xl">${status.icon} ${status.label}</span>
+</div>
+</div>
+</div>
+
+<!-- Progress bar -->
+<div class="h-2.5 bg-gray-100 rounded-3xl mt-6 overflow-hidden">
+<div class="h-full bg-gradient-to-r from-${status.color}-400 to-${status.color}-600 progress-bar"
+style="width: ${progress}%"></div>
+</div>
+
+<div class="flex justify-between text-[10px] text-gray-400 mt-1">
+<span>目前</span>
+<span>預期 ${expected}%</span>
+</div>
+
+<div class="mt-4 text-xs text-gray-500 flex items-center">
+<i class="fa-solid fa-user-tie mr-1"></i>
+組長：${group.leader}
+<span class="ml-auto">${daysLeft} 天後報告</span>
+</div>
+</div>
+</div>`
+
+container.innerHTML += cardHTML
+})
+
+// Update overall status
+updateOverallStatus()
+}
+
+function updateOverallStatus() {
+let onTime = 0
+groupsData.forEach(group => {
+const daysLeft = daysUntil(group.presentationDate)
+const progressKey = `progress-group-${group.id}`
+let progress = parseFloat(localStorage.getItem(progressKey)) || 0
+const expected = getExpectedProgress(daysLeft)
+const behind = Math.max(0, expected - progress)
+if (behind < 20) onTime++
+})
+
+document.getElementById('overall-status').innerHTML = `
+${onTime} 組<span class="text-emerald-500 text-2xl ml-2">✅ 準時</span><br>
+<span class="text-base font-normal">${groupsData.length - onTime} 組需注意</span>
+`
+
+const lastUpdate = new Date().toLocaleString('zh-TW', { hour: '2-digit', minute: '2-digit' })
+document.getElementById('last-updated').textContent = `最後更新 ${lastUpdate}`
+}
+
+// =============== MODAL ===============
+let currentGroup = null
+
+function openGroupModal(id) {
+currentGroup = groupsData.find(g => g.id === id)
+if (!currentGroup) return
+
+const daysLeft = daysUntil(currentGroup.presentationDate)
+const progressKey = `progress-group-${currentGroup.id}`
+let progress = parseFloat(localStorage.getItem(progressKey)) || 0
+const expected = getExpectedProgress(daysLeft)
+const status = getStatus(progress, expected)
+
+// Header
+const headerHTML = `
+<div class="flex items-center justify-between w-full">
+<div class="flex items-center gap-x-4">
+<span class="text-4xl">${currentGroup.name}</span>
+<span class="px-4 py-1 text-sm bg-indigo-100 text-indigo-700 rounded-3xl">${currentGroup.theme}</span>
+</div>
+<div class="text-right">
+<div class="text-xs text-gray-400">報告日期</div>
+<div class="text-xl font-semibold">${currentGroup.presentationDate}（${daysLeft}天）</div>
+</div>
+</div>`
+document.getElementById('modal-header').innerHTML = headerHTML
+
+// Members
+let membersHTML = ''
+currentGroup.members.forEach(m => {
+const leaderBadge = m.leader ? `<span class="ml-2 text-[10px] bg-amber-100 text-amber-700 px-2 rounded-3xl">組長</span>` : ''
+membersHTML += `
+<div class="flex justify-between items-center bg-gray-50 rounded-2xl px-4 py-3 text-sm">
+<div>
+<span class="font-medium">${m.name}</span>
+${leaderBadge}
+</div>
+<div class="text-gray-400 text-xs">${m.email}</div>
+</div>`
+})
+document.getElementById('modal-members').innerHTML = membersHTML
+
+// Progress
+document.getElementById('progress-slider').value = progress
+updateProgressDisplay(progress)
+
+// Status panel
+const statusHTML = `
+<div class="flex items-center justify-between">
+<div>
+<div class="flex items-center gap-x-3">
+<span class="text-4xl">${status.icon}</span>
+<div>
+<div class="text-2xl font-bold text-${status.color}-600">${status.label}</div>
+<div class="text-sm text-${status.color}-700">${status.description}</div>
+</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-xs uppercase tracking-widest">目前 / 預期</div>
+<div class="text-6xl font-bold text-gray-900">${progress}<span class="text-3xl text-gray-400"> / ${expected}</span></div>
+<div class="text-xs text-gray-500">百分比</div>
+</div>
+</div>`
+document.getElementById('modal-status').innerHTML = statusHTML
+document.getElementById('modal-status').className = `rounded-3xl p-6 border border-${status.color}-200 bg-${status.color}-50`
+
+// Milestones
+const milestonesHTML = `
+<div class="flex items-center gap-x-2 text-emerald-600"><span class="text-lg">📅</span> 1個月前 ≥20% <span class="ml-auto text-xs">已過</span></div>
+<div class="flex items-center gap-x-2 text-amber-600"><span class="text-lg">📅</span> 2週前 &gt;40% <span class="ml-auto text-xs">進行中</span></div>
+<div class="flex items-center gap-x-2 text-violet-600"><span class="text-lg">📅</span> 1週前 &gt;80%</div>
+<div class="flex items-center gap-x-2 text-rose-600"><span class="text-lg">📅</span> 2天前 &gt;95%</div>`
+document.getElementById('milestone-timeline').innerHTML = milestonesHTML
+
+document.getElementById('modal').classList.remove('hidden')
+document.getElementById('modal').classList.add('flex')
+}
+
+function hideModal() {
+const modal = document.getElementById('modal')
+modal.classList.add('hidden')
+modal.classList.remove('flex')
+currentGroup = null
+renderGroups()
+}
+
+function updateProgressDisplay(val) {
+document.getElementById('modal-progress-display').textContent = val
+}
+
+function saveProgress() {
+if (!currentGroup) return
+const progress = parseFloat(document.getElementById('progress-slider').value)
+const key = `progress-group-${currentGroup.id}`
+localStorage.setItem(key, progress)
+
+// Fake toast
+const toast = document.createElement('div')
+toast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#10b981; color:white; padding:16px 24px; border-radius:9999px; box-shadow:0 10px 15px -3px rgb(16 185 129);'
+toast.innerHTML = `✅ 第${currentGroup.id}組 進度更新為 ${progress}%`
+document.body.appendChild(toast)
+
+setTimeout(() => {
+toast.style.transition = 'all 0.3s ease'
+toast.style.opacity = '0'
+setTimeout(() => toast.remove(), 300)
+}, 2200)
+
+hideModal()
+}
+
+// =============== TEACHER VIEW ===============
+function showTeacherView() {
+const modal = document.getElementById('teacher-modal')
+const content = document.getElementById('teacher-content')
+
+let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">`
+
+groupsData.forEach(group => {
+const daysLeft = daysUntil(group.presentationDate)
+const progressKey = `progress-group-${group.id}`
+let progress = parseFloat(localStorage.getItem(progressKey)) || 0
+const expected = getExpectedProgress(daysLeft)
+const status = getStatus(progress, expected)
+
+html += `
+<div class="border border-gray-100 rounded-3xl p-5">
+<div class="flex justify-between mb-4">
+<div class="font-semibold">${group.name} - ${group.theme}</div>
+<div class="px-3 py-1 text-xs rounded-3xl bg-${status.color}-100 text-${status.color}-700">${status.label}</div>
+</div>
+<div class="flex items-baseline gap-x-3">
+<div class="text-6xl font-bold">${progress}%</div>
+<div class="text-sm text-gray-400">/ 預期 ${expected}%</div>
+</div>
+<div class="h-2 bg-gray-100 rounded-3xl mt-6 mb-1">
+<div class="h-2 bg-${status.color}-500 rounded-3xl" style="width:${progress}%"></div>
+</div>
+<div class="text-xs text-gray-500">${daysLeft} 天後報告 • 組長 ${group.leader}</div>
+${status.label === '嚴重延遲' ? `<button onclick="simulateTeacherNotification(${group.id});" class="mt-4 text-xs bg-rose-100 text-rose-600 px-5 h-8 rounded-3xl flex items-center">📨 立即通知該組</button>` : ''}
+</div>`
+})
+
+html += `</div>`
+content.innerHTML = html
+modal.classList.remove('hidden')
+modal.classList.add('flex')
+}
+
+function hideTeacherModal() {
+const modal = document.getElementById('teacher-modal')
+modal.classList.add('hidden')
+modal.classList.remove('flex')
+}
+
+function simulateTeacherNotification(groupId = null) {
+const msg = groupId
+? `🚨 已發送Line訊息 + Email 給老師（mytusttust@gmail.com）\n第${groupId}組嚴重延遲！`
+: `🚨 通知已送出！\n老師將收到Line與Email提醒，並要求學生補救。`
+
+alert(msg + '\n\n（這是模擬功能，真實版本可串接LINE Notify或Email API）')
+hideTeacherModal()
+hideModal()
+}
+
+// =============== RESET DATA ===============
+function resetAllData() {
+if (confirm('確定要清除所有已儲存的進度資料嗎？（用於測試）')) {
+localStorage.clear()
+renderGroups()
+alert('✅ 所有進度已重置為 0%')
+}
+}
+
+function showHowTo() {
+document.getElementById('howto-modal').classList.remove('hidden')
+document.getElementById('howto-modal').classList.add('flex')
+}
+
+function hideHowTo() {
+const m = document.getElementById('howto-modal')
+m.classList.add('hidden')
+m.classList.remove('flex')
+}
+
+// =============== INIT ===============
+function initTailwind() {
+return {
+config(userConfig = {}) {
+return {
+configUser: userConfig,
+theme: {
+extend: {},
+},
+}
+},
+theme: {
+extend: {},
+},
+}
+}
+
+function main() {
+// Tailwind
+const config = initTailwind()
+document.documentElement.setAttribute('data-tailwind-config', JSON.stringify(config))
+
+// Render current date
+const dateEl = document.getElementById('current-date')
+const now = new Date()
+dateEl.querySelector('span').innerHTML = `
+今天 ${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}
+<span class="text-emerald-500">(${['日','一','二','三','四','五','六'][now.getDay()]})</span>
+`
+// First render
+renderGroups()
+
+console.log('%c✅ Vibe Coding 完成的互動式期末報告進度App 已就緒！', 'background:#4f46e5;color:white;padding:2px 6px;border-radius:4px;font-size:10px')
+console.log('直接將這個HTML檔案上傳到GitHub Pages / Netlify / Vercel，即可在Line群組分享連結讓學生使用。')
+console.log('所有資料儲存在瀏覽器 localStorage，適合小班即時追蹤。')
+}
+
+window.onload = main
+</script>
+</body>
+</html>
